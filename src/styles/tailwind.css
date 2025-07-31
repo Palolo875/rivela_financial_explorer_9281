@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core Colors */
+    --color-background: #F8FAFC; /* slate-50 */
+    --color-foreground: #1E293B; /* slate-800 */
+    --color-border: rgba(100, 116, 139, 0.2); /* slate-500 with opacity */
+    --color-input: #FFFFFF; /* white */
+    --color-ring: #4F8EDB; /* primary blue */
+    
+    /* Card Colors */
+    --color-card: rgba(255, 255, 255, 0.8); /* white with glassmorphism */
+    --color-card-foreground: #1E293B; /* slate-800 */
+    --color-popover: rgba(255, 255, 255, 0.95); /* white with glassmorphism */
+    --color-popover-foreground: #1E293B; /* slate-800 */
+    
+    /* Muted Colors */
+    --color-muted: rgba(248, 250, 252, 0.8); /* slate-50 with opacity */
+    --color-muted-foreground: #64748B; /* slate-500 */
+    
+    /* Primary Colors */
+    --color-primary: #4F8EDB; /* trustworthy blue */
+    --color-primary-foreground: #FFFFFF; /* white */
+    
+    /* Secondary Colors */
+    --color-secondary: #7B68EE; /* sophisticated purple */
+    --color-secondary-foreground: #FFFFFF; /* white */
+    
+    /* Accent Colors */
+    --color-accent: #52C4A0; /* success-oriented teal */
+    --color-accent-foreground: #FFFFFF; /* white */
+    
+    /* State Colors */
+    --color-destructive: #EF4444; /* clear red */
+    --color-destructive-foreground: #FFFFFF; /* white */
+    --color-success: #10B981; /* vibrant green */
+    --color-success-foreground: #FFFFFF; /* white */
+    --color-warning: #F59E0B; /* warm amber */
+    --color-warning-foreground: #FFFFFF; /* white */
+    --color-error: #EF4444; /* clear red */
+    --color-error-foreground: #FFFFFF; /* white */
+    
+    /* Glassmorphism Support */
+    --color-glass-surface: rgba(255, 255, 255, 0.1); /* transparent white */
+    --color-glass-border: rgba(255, 255, 255, 0.2); /* transparent white border */
+    --color-backdrop-blur: blur(12px); /* backdrop filter blur */
+    
+    /* Shadow Variables */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  }
+  
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+  }
+  
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  /* Glassmorphism utilities */
+  .glass {
+    background: var(--color-glass-surface);
+    backdrop-filter: var(--color-backdrop-blur);
+    -webkit-backdrop-filter: var(--color-backdrop-blur);
+    border: 1px solid var(--color-glass-border);
+  }
+  
+  .glass-card {
+    background: var(--color-card);
+    backdrop-filter: var(--color-backdrop-blur);
+    -webkit-backdrop-filter: var(--color-backdrop-blur);
+    border: 1px solid var(--color-glass-border);
+    box-shadow: var(--shadow-glass);
+  }
+  
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-reveal {
+    transition: all 800ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .transition-smooth,
+    .transition-reveal {
+      transition: none;
+    }
+  }
+}
