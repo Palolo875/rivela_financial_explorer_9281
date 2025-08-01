@@ -1,48 +1,44 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-const SearchBar = ({ onSubmit, onVoiceClick, suggestions = [], disabled = false }) => {
+const SearchBar = ({ onSubmit, onVoiceClick, suggestions = [] }) => {
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef(null);
-  const suggestionsRef = useRef(null);
-
-  // Memoize filtered suggestions for performance
-  const filteredSuggestionsData = useMemo(() => {
-    if (query.length > 2) {
-      return suggestions.filter(suggestion =>
-        suggestion.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-    return [];
-  }, [query, suggestions]);
 
   useEffect(() => {
-    setFilteredSuggestions(filteredSuggestionsData);
-    setShowSuggestions(filteredSuggestionsData.length > 0 && query.length > 2);
+    if (query.length > 2) {
+      const filtered = suggestions.filter(suggestion =>
+        suggestion.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setShowSuggestions(false);
+      setFilteredSuggestions([]);
+    }
     setSelectedIndex(-1);
-  }, [filteredSuggestionsData, query]);
+  }, [query, suggestions]);
 
-  const handleSubmit = useCallback((e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
       onSubmit(query.trim());
       setQuery('');
       setShowSuggestions(false);
     }
-  }, [query, onSubmit]);
+  };
 
-  const handleSuggestionClick = useCallback((suggestion) => {
+  const handleSuggestionClick = (suggestion) => {
     setQuery(suggestion);
     setShowSuggestions(false);
     onSubmit(suggestion);
-  }, [onSubmit]);
+  };
 
   const handleKeyDown = (e) => {
     if (!showSuggestions) return;
@@ -83,13 +79,7 @@ const SearchBar = ({ onSubmit, onVoiceClick, suggestions = [], disabled = false 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="border-0 bg-transparent focus:ring-0 text-base placeholder:text-muted-foreground pl-10"
-              aria-label="Champ de recherche pour questions financières"
-              aria-describedby={showSuggestions ? "suggestions-list" : undefined}
-              aria-expanded={showSuggestions}
-              aria-autocomplete="list"
-              role="combobox"
-              aria-activedescendant={selectedIndex >= 0 ? `suggestion-${selectedIndex}` : undefined}
+              className="border-0 bg-transparent focus:ring-0 text-base placeholder:text-muted-foreground"
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
               <Icon name="Search" size={20} className="text-muted-foreground" />
@@ -104,16 +94,14 @@ const SearchBar = ({ onSubmit, onVoiceClick, suggestions = [], disabled = false 
               onClick={onVoiceClick}
               iconName="Mic"
               className="text-muted-foreground hover:text-primary"
-              aria-label="Démarrer la saisie vocale"
             />
             
             <Button
               type="submit"
               variant="default"
               size="sm"
-              disabled={!query.trim() || disabled}
-              loading={disabled}
-              iconName={disabled ? undefined : "Send"}
+              disabled={!query.trim()}
+              iconName="Send"
               className="bg-gradient-to-r from-primary to-secondary"
             />
           </div>
@@ -128,27 +116,23 @@ const SearchBar = ({ onSubmit, onVoiceClick, suggestions = [], disabled = false 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className="absolute top-full left-0 right-0 mt-2 glass-card rounded-xl shadow-lg border border-glass-border z-50"
-            ref={suggestionsRef}
           >
-            <ul className="py-2" role="listbox" id="suggestions-list" aria-label="Suggestions de questions">
+            <div className="py-2">
               {filteredSuggestions.map((suggestion, index) => (
-                <li key={index} role="option" aria-selected={index === selectedIndex}>
-                  <button
-                    id={`suggestion-${index}`}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className={`w-full text-left px-4 py-3 hover:bg-primary/10 transition-colors ${
-                      index === selectedIndex ? 'bg-primary/10' : ''
-                    }`}
-                    aria-label={`Suggestion: ${suggestion}`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Icon name="Search" size={16} className="text-muted-foreground" aria-hidden="true" />
-                      <span className="text-sm text-foreground">{suggestion}</span>
-                    </div>
-                  </button>
-                </li>
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className={`w-full text-left px-4 py-3 hover:bg-primary/10 transition-colors ${
+                    index === selectedIndex ? 'bg-primary/10' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon name="Search" size={16} className="text-muted-foreground" />
+                    <span className="text-sm text-foreground">{suggestion}</span>
+                  </div>
+                </button>
               ))}
-            </ul>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -179,18 +163,6 @@ const SearchBar = ({ onSubmit, onVoiceClick, suggestions = [], disabled = false 
       )}
     </div>
   );
-};
-
-SearchBar.propTypes = {
-  onSubmit: PropTypes.func.isRequired,
-  onVoiceClick: PropTypes.func.isRequired,
-  suggestions: PropTypes.arrayOf(PropTypes.string),
-  disabled: PropTypes.bool
-};
-
-SearchBar.defaultProps = {
-  suggestions: [],
-  disabled: false
 };
 
 export default SearchBar;

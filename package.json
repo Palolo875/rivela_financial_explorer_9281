@@ -31,6 +31,9 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@reduxjs/toolkit": "^2.6.1",
     "@tailwindcss/forms": "^0.5.7",
+    "@testing-library/jest-dom": "^5.15.1",
+    "@testing-library/react": "^11.2.7",
+    "@testing-library/user-event": "^12.8.3",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -39,7 +42,6 @@
     "dotenv": "^16.0.1",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.484.0",
-    "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet": "^6.1.0",
@@ -56,14 +58,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build --sourcemap",
-    "serve": "vite preview",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "lint": "eslint src --ext .js,.jsx",
-    "lint:fix": "eslint src --ext .js,.jsx --fix",
-    "type-check": "echo 'Type checking placeholder - consider migrating to TypeScript'",
-    "analyze": "npm run build && npx vite-bundle-analyzer"
+    "serve": "vite preview"
   },
   "eslintConfig": {
     "extends": [
@@ -88,16 +83,11 @@
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/line-clamp": "^0.1.0",
     "@tailwindcss/typography": "^0.5.16",
-    "@testing-library/jest-dom": "^6.6.4",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.2",
-    "jest": "^30.0.5",
-    "jest-environment-jsdom": "^30.0.5",
-    "postcss": "^8.5.6",
+    "postcss": "8.4.8",
     "tailwindcss": "3.4.6",
-    "vite": "^5.4.19",
+    "vite": "5.0.0",
     "vite-tsconfig-paths": "3.6.0"
   }
 }
