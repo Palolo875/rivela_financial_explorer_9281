@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
+import { useAppNavigation } from '../../utils/navigation';
 
 const Header = () => {
+  const { navigateTo } = useAppNavigation();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState('');
 
   const navigationItems = [
     { label: 'Accueil', path: '/financial-question-input-hub', icon: 'Home' },
@@ -17,13 +22,17 @@ const Header = () => {
   ];
 
   const handleNavigation = (path) => {
-    window.location.href = path;
+    navigateTo(path);
     setIsMenuOpen(false);
   };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  useEffect(() => {
+    setCurrentPath(location.pathname);
+  }, [location.pathname]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-100 glass-card border-b border-glass-border">

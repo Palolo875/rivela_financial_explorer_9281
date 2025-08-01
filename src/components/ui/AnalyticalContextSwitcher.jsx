@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
+import { useAppNavigation } from '../../utils/navigation';
 
 const AnalyticalContextSwitcher = () => {
+  const { navigateTo } = useAppNavigation();
+  const location = useLocation();
   const [activeContext, setActiveContext] = useState('equation');
 
   const contexts = [
@@ -23,11 +27,11 @@ const AnalyticalContextSwitcher = () => {
 
   const handleContextSwitch = (contextId, path) => {
     setActiveContext(contextId);
-    window.location.href = path;
+    navigateTo(path);
   };
 
   // Only show on analysis pages
-  const currentPath = window.location.pathname;
+  const currentPath = location.pathname;
   const isAnalysisPage = currentPath === '/dynamic-financial-equation-visualizer' || 
                         currentPath === '/emotional-spending-analytics-dashboard';
 
