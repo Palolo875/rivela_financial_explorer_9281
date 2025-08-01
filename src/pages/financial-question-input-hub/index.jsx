@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Header from '../../components/ui/Header';
 import BottomNavigation from '../../components/ui/BottomNavigation';
@@ -13,8 +13,10 @@ import CategoryFilter from './components/CategoryFilter';
 import TrendingQuestions from './components/TrendingQuestions';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { useAppNavigation, buildUrl } from '../../utils/navigation';
 
 const FinancialQuestionInputHub = () => {
+  const { navigateTo } = useAppNavigation();
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
   const [showDataRequirements, setShowDataRequirements] = useState(false);
@@ -198,7 +200,7 @@ const FinancialQuestionInputHub = () => {
     }
   }, [currentQuery]);
 
-  const handleQuestionSubmit = (question) => {
+  const handleQuestionSubmit = useCallback((question) => {
     setCurrentQuery(question);
     
     // Add to recent questions
@@ -212,34 +214,37 @@ const FinancialQuestionInputHub = () => {
 
     // Simulate processing and redirect to analysis
     setTimeout(() => {
-      window.location.href = '/dynamic-financial-equation-visualizer';
+      navigateTo('/dynamic-financial-equation-visualizer');
     }, 1500);
-  };
+  }, [navigateTo]);
 
-  const handleVoiceSubmit = (transcript) => {
+  const handleVoiceSubmit = useCallback((transcript) => {
     handleQuestionSubmit(transcript);
-  };
+  }, [handleQuestionSubmit]);
 
-  const handleSuggestionSelect = (suggestion) => {
+  const handleSuggestionSelect = useCallback((suggestion) => {
     handleQuestionSubmit(suggestion.question);
-  };
+  }, [handleQuestionSubmit]);
 
-  const handleRerunQuestion = (question) => {
+  const handleRerunQuestion = useCallback((question) => {
     handleQuestionSubmit(question.question);
-  };
+  }, [handleQuestionSubmit]);
 
-  const handleDeleteQuestion = (questionId) => {
+  const handleDeleteQuestion = useCallback((questionId) => {
     setRecentQuestions(prev => prev.filter(q => q.id !== questionId));
-  };
+  }, []);
 
-  const handleQuickAdd = (dataType) => {
+  const handleQuickAdd = useCallback((dataType) => {
     // Navigate to data mapping page with specific section
-    window.location.href = `/interactive-financial-data-mapping?section=${dataType}`;
-  };
+    const url = buildUrl('/interactive-financial-data-mapping', { section: dataType });
+    navigateTo(url);
+  }, [navigateTo]);
 
-  const filteredSuggestions = activeCategory === 'all' 
-    ? questionSuggestions 
-    : questionSuggestions.filter(s => s.category.toLowerCase() === activeCategory);
+  const filteredSuggestions = useMemo(() => {
+    return activeCategory === 'all' 
+      ? questionSuggestions 
+      : questionSuggestions.filter(s => s.category.toLowerCase() === activeCategory);
+  }, [activeCategory, questionSuggestions]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">

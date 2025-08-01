@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
+import { useAppNavigation } from '../../utils/navigation';
 
 const BottomNavigation = () => {
+  const { navigateTo } = useAppNavigation();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('/financial-question-input-hub');
   const [healthScore, setHealthScore] = useState(78);
   const [dataCompletion, setDataCompletion] = useState(65);
@@ -38,13 +42,12 @@ const BottomNavigation = () => {
 
   useEffect(() => {
     // Set active tab based on current path
-    const currentPath = window.location.pathname;
-    setActiveTab(currentPath);
-  }, []);
+    setActiveTab(location.pathname);
+  }, [location.pathname]);
 
   const handleTabClick = (path) => {
     setActiveTab(path);
-    window.location.href = path;
+    navigateTo(path);
   };
 
   const getBadgeColor = (color) => {
