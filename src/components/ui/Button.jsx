@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
 import { cn } from "../../utils/cn";
@@ -106,5 +107,27 @@ const Button = React.forwardRef(({
 });
 
 Button.displayName = "Button";
+
+Button.propTypes = {
+  className: PropTypes.string,
+  variant: PropTypes.oneOf(['default', 'destructive', 'outline', 'secondary', 'ghost', 'link', 'success', 'warning', 'danger']),
+  size: PropTypes.oneOf(['default', 'sm', 'lg', 'icon', 'xs', 'xl']),
+  asChild: PropTypes.bool,
+  children: PropTypes.node,
+  loading: PropTypes.bool,
+  iconName: PropTypes.string,
+  iconPosition: PropTypes.oneOf(['left', 'right']),
+  iconSize: PropTypes.number,
+  fullWidth: PropTypes.bool,
+  disabled: PropTypes.bool
+};
+
+Button.defaultProps = {
+  asChild: false,
+  loading: false,
+  iconPosition: 'left',
+  fullWidth: false,
+  disabled: false
+};
 
 export default Button;
