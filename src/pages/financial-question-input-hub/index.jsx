@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Header from '../../components/ui/Header';
 import BottomNavigation from '../../components/ui/BottomNavigation';
@@ -13,12 +13,18 @@ import CategoryFilter from './components/CategoryFilter';
 import TrendingQuestions from './components/TrendingQuestions';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { useAppNavigation, buildUrl } from '../../utils/navigation';
+import { handleAsyncError } from '../../utils/errorHandling';
 
 const FinancialQuestionInputHub = () => {
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
   const [showDataRequirements, setShowDataRequirements] = useState(false);
   const [currentQuery, setCurrentQuery] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const { navigateTo } = useAppNavigation();
 
   // Mock data for suggestions
   const questionSuggestions = [
@@ -198,48 +204,64 @@ const FinancialQuestionInputHub = () => {
     }
   }, [currentQuery]);
 
-  const handleQuestionSubmit = (question) => {
-    setCurrentQuery(question);
-    
-    // Add to recent questions
-    const newQuestion = {
-      id: Date.now(),
-      question: question,
-      timestamp: new Date(),
-      status: 'processing'
-    };
-    setRecentQuestions(prev => [newQuestion, ...prev.slice(0, 4)]);
+  const handleQuestionSubmit = useCallback(async (question) => {
+    try {
+      setError(null);
+      setIsProcessing(true);
+      setCurrentQuery(question);
+      
+      // Add to recent questions
+      const newQuestion = {
+        id: Date.now(),
+        question: question,
+        timestamp: new Date(),
+        status: 'processing'
+      };
+      setRecentQuestions(prev => [newQuestion, ...prev.slice(0, 4)]);
 
-    // Simulate processing and redirect to analysis
-    setTimeout(() => {
-      window.location.href = '/dynamic-financial-equation-visualizer';
-    }, 1500);
-  };
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Navigate to analysis page
+      navigateTo('/dynamic-financial-equation-visualizer');
+    } catch (error) {
+      const errorInfo = handleAsyncError(error, 'handleQuestionSubmit');
+      setError(errorInfo.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [navigateTo]);
 
-  const handleVoiceSubmit = (transcript) => {
+  const handleVoiceSubmit = useCallback((transcript) => {
     handleQuestionSubmit(transcript);
-  };
+  }, [handleQuestionSubmit]);
 
-  const handleSuggestionSelect = (suggestion) => {
+  const handleSuggestionSelect = useCallback((suggestion) => {
     handleQuestionSubmit(suggestion.question);
-  };
+  }, [handleQuestionSubmit]);
 
-  const handleRerunQuestion = (question) => {
+  const handleRerunQuestion = useCallback((question) => {
     handleQuestionSubmit(question.question);
-  };
+  }, [handleQuestionSubmit]);
 
-  const handleDeleteQuestion = (questionId) => {
+  const handleDeleteQuestion = useCallback((questionId) => {
     setRecentQuestions(prev => prev.filter(q => q.id !== questionId));
-  };
+  }, []);
 
-  const handleQuickAdd = (dataType) => {
-    // Navigate to data mapping page with specific section
-    window.location.href = `/interactive-financial-data-mapping?section=${dataType}`;
-  };
+  const handleQuickAdd = useCallback((dataType) => {
+    try {
+      const url = buildUrl('/interactive-financial-data-mapping', { section: dataType });
+      navigateTo(url);
+    } catch (error) {
+      handleAsyncError(error, 'handleQuickAdd');
+    }
+  }, [navigateTo]);
 
-  const filteredSuggestions = activeCategory === 'all' 
-    ? questionSuggestions 
-    : questionSuggestions.filter(s => s.category.toLowerCase() === activeCategory);
+  const filteredSuggestions = useMemo(() => {
+    return activeCategory === 'all' 
+      ? questionSuggestions 
+      : questionSuggestions.filter(s => s.category.toLowerCase() === activeCategory);
+  }, [activeCategory]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -269,6 +291,45 @@ const FinancialQuestionInputHub = () => {
             </p>
           </motion.div>
 
+          {/* Error Display */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+            >
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center space-x-3">
+                <Icon name="AlertCircle" size={20} className="text-destructive flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-destructive text-sm font-medium">Erreur</p>
+                  <p className="text-destructive/80 text-sm">{error}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setError(null)}
+                  iconName="X"
+                  className="text-destructive hover:text-destructive/80"
+                  aria-label="Fermer l'erreur"
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Loading State */}
+          {isProcessing && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+            >
+              <div className="glass-card rounded-lg p-4 flex items-center space-x-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                <p className="text-foreground font-medium">Analyse de votre question en cours...</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Search Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -280,6 +341,7 @@ const FinancialQuestionInputHub = () => {
               onSubmit={handleQuestionSubmit}
               onVoiceClick={() => setIsVoiceModalOpen(true)}
               suggestions={autoCompleteSuggestions}
+              disabled={isProcessing}
             />
           </motion.div>
 
