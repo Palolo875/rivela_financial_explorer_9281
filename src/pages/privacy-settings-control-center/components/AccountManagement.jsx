@@ -119,7 +119,7 @@ const AccountManagement = () => {
   };
 
   const handleSessionRevoke = (sessionId) => {
-    console.log('Revoking session:', sessionId);
+    // Session revoked successfully
   };
 
   return (

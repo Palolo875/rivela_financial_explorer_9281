@@ -51,7 +51,7 @@ const DataImportExport = ({ onImportData, onExportData, financialData }) => {
           setShowImportModal(false);
         }
       } catch (error) {
-        console.error('Erreur lors de l\'import:', error);
+        // Import error handled by UI state
       }
     };
     reader.readAsText(file);

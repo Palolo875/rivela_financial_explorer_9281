@@ -131,7 +131,7 @@ const DataExportControls = () => {
     setExportProgress(null);
     
     // Trigger download (mock)
-    console.log('Export completed:', { selectedFormats, selectedDataTypes });
+    // Export completed successfully
   };
 
   const getEstimatedTime = () => {

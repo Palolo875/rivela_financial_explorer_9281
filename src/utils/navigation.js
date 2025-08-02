@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { logger } from './logger';
 
 /**
  * Custom hook for programmatic navigation
@@ -11,7 +12,7 @@ export const useAppNavigation = () => {
     try {
       navigate(path, options);
     } catch (error) {
-      console.error('Navigation error:', error);
+      logger.error('Navigation error:', error);
       // Fallback to window.location for emergency cases
       window.location.href = path;
     }
@@ -21,7 +22,7 @@ export const useAppNavigation = () => {
     try {
       navigate(-1);
     } catch (error) {
-      console.error('Navigation back error:', error);
+      logger.error('Navigation back error:', error);
       window.history.back();
     }
   };
