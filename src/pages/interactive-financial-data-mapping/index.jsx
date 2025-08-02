@@ -29,7 +29,7 @@ const InteractiveFinancialDataMapping = () => {
         const parsedData = JSON.parse(savedData);
         setFinancialData(parsedData);
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
+        // Error parsing saved data - continue with empty state
       }
     }
 
@@ -39,7 +39,7 @@ const InteractiveFinancialDataMapping = () => {
         const parsedContexts = JSON.parse(savedContexts);
         setEmotionalContexts(parsedContexts);
       } catch (error) {
-        console.error('Erreur lors du chargement des contextes émotionnels:', error);
+        // Error loading emotional contexts - continue with empty state
       }
     }
   }, []);
@@ -110,7 +110,7 @@ const InteractiveFinancialDataMapping = () => {
   };
 
   const handleExportData = (format) => {
-    console.log(`Données exportées au format ${format}`);
+    // Data exported successfully
   };
 
   const renderActiveSection = () => {

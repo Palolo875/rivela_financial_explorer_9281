@@ -1,12 +1,13 @@
 /**
  * Enhanced error handling utilities
  */
+import { logger } from './logger';
 
 /**
  * Generic error handler for API calls and async operations
  */
 export const handleAsyncError = (error, context = '') => {
-  console.error(`Error in ${context}:`, error);
+  logger.error(`Error in ${context}:`, error);
   
   // Log to external service in production
   if (process.env.NODE_ENV === 'production') {

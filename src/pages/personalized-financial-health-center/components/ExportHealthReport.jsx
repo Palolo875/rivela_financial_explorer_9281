@@ -126,13 +126,13 @@ const ExportHealthReport = () => {
     
     // Simulate download
     const reportName = `rapport-sante-financiere-${new Date().toISOString().split('T')[0]}.${selectedFormat}`;
-    console.log(`Téléchargement du rapport: ${reportName}`);
+            // Report download initiated
     
     setIsGenerating(false);
   };
 
   const handleDownloadReport = (reportId) => {
-    console.log(`Téléchargement du rapport: ${reportId}`);
+            // Report download initiated
   };
 
   const getEstimatedSize = () => {

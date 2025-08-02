@@ -147,7 +147,7 @@ const BottomNavigation = () => {
         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 w-14 h-14 lg:w-16 lg:h-16 bg-gradient-to-br from-primary to-secondary text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 z-80 flex items-center justify-center group"
         onClick={() => {
           // Quick action functionality
-          console.log('Quick action triggered');
+          // Quick action triggered
         }}
         title="Actions rapides"
       >
