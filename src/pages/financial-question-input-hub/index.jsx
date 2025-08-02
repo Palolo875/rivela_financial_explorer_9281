@@ -1,467 +1,445 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import Header from '../../components/ui/Header';
-import BottomNavigation from '../../components/ui/BottomNavigation';
-import AnalyticalContextSwitcher from '../../components/ui/AnalyticalContextSwitcher';
-import NavigationProgressIndicator from '../../components/ui/NavigationProgressIndicator';
-import SearchBar from './components/SearchBar';
-import VoiceInputModal from './components/VoiceInputModal';
-import QuestionSuggestionCard from './components/QuestionSuggestionCard';
-import RecentQuestionsSection from './components/RecentQuestionsSection';
-import DataRequirementsPanel from './components/DataRequirementsPanel';
-import CategoryFilter from './components/CategoryFilter';
-import TrendingQuestions from './components/TrendingQuestions';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
-import { useAppNavigation, buildUrl } from '../../utils/navigation';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { getSuggestedQuestions, PERSONAS } from '../../types/personas';
+import { financialEngine } from '../../utils/financialEngine';
+import { logger } from '../../utils/logger';
 
 const FinancialQuestionInputHub = () => {
-  const { navigateTo } = useAppNavigation();
-  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [showDataRequirements, setShowDataRequirements] = useState(false);
-  const [currentQuery, setCurrentQuery] = useState('');
+  const [question, setQuestion] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedPersona, setSelectedPersona] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [currentStep, setCurrentStep] = useState('welcome'); // welcome, personas, question, submitting
+  const [animationPhase, setAnimationPhase] = useState('entrance');
+  const navigate = useNavigate();
 
-  // Mock data for suggestions
-  const questionSuggestions = [
-    {
-      id: 1,
-      category: 'Budget',
-      question: "Comment optimiser mon budget mensuel pour économiser 500€ de plus ?",
-      description: "Analyse détaillée de vos dépenses avec recommandations personnalisées",
-      estimatedTime: "3-5 min",
-      dataRequired: "Revenus + Dépenses",
-      popularity: 87
-    },
-    {
-      id: 2,
-      category: 'Épargne',
-      question: "Quelle stratégie d'épargne adopter pour acheter ma première maison ?",
-      description: "Plan d'épargne personnalisé avec timeline et objectifs intermédiaires",
-      estimatedTime: "5-7 min",
-      dataRequired: "Objectifs + Revenus",
-      popularity: 73
-    },
-    {
-      id: 3,
-      category: 'Dettes',
-      question: "Comment rembourser mes crédits plus rapidement ?",
-      description: "Stratégies de remboursement optimisées selon votre situation",
-      estimatedTime: "4-6 min",
-      dataRequired: "Dettes + Budget",
-      popularity: 65
-    },
-    {
-      id: 4,
-      category: 'Objectifs',
-      question: "Puis-je me permettre de prendre un congé sabbatique l\'année prochaine ?",
-      description: "Simulation financière complète avec plan de préparation",
-      estimatedTime: "6-8 min",
-      dataRequired: "Épargne + Dépenses",
-      popularity: 42
-    },
-    {
-      id: 5,
-      category: 'Budget',
-      question: "Mes dépenses de loisirs sont-elles raisonnables ?",
-      description: "Comparaison avec des profils similaires et recommandations",
-      estimatedTime: "2-4 min",
-      dataRequired: "Dépenses détaillées",
-      popularity: 58
-    },
-    {
-      id: 6,
-      category: 'Épargne',
-      question: "Combien devrais-je épargner chaque mois pour ma retraite ?",
-      description: "Calcul personnalisé basé sur vos objectifs de retraite",
-      estimatedTime: "5-7 min",
-      dataRequired: "Âge + Revenus + Objectifs",
-      popularity: 81
-    }
-  ];
-
-  // Mock data for recent questions
-  const [recentQuestions, setRecentQuestions] = useState([
-    {
-      id: 1,
-      question: "Comment réduire mes frais bancaires ?",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      status: 'completed',
-      insights: "Économies potentielles de 180€/an identifiées"
-    },
-    {
-      id: 2,
-      question: "Dois-je renégocier mon crédit immobilier ?",
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      status: 'processing'
-    },
-    {
-      id: 3,
-      question: "Quelle assurance vie choisir ?",
-      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      status: 'completed',
-      insights: "3 options adaptées à votre profil trouvées"
-    }
-  ]);
-
-  // Mock data for categories
-  const categories = [
-    { id: 'all', name: 'Tous', count: questionSuggestions.length, description: 'Toutes les questions financières' },
-    { id: 'budget', name: 'Budget', count: 2, description: 'Optimisation et gestion de votre budget mensuel' },
-    { id: 'epargne', name: 'Épargne', count: 2, description: 'Stratégies d\'épargne et placement de vos économies' },
-    { id: 'dettes', name: 'Dettes', count: 1, description: 'Gestion et remboursement de vos crédits' },
-    { id: 'objectifs', name: 'Objectifs', count: 1, description: 'Planification de vos projets financiers' }
-  ];
-
-  // Mock data for trending questions
-  const trendingQuestions = [
-    {
-      id: 1,
-      text: "Comment investir 10 000€ en 2025 ?",
-      category: "Investissement",
-      trend: 15,
-      askCount: 234,
-      avgTime: "6 min",
-      satisfaction: 92
-    },
-    {
-      id: 2,
-      text: "Faut-il acheter ou louer son logement ?",
-      category: "Immobilier",
-      trend: 8,
-      askCount: 189,
-      avgTime: "8 min",
-      satisfaction: 88
-    },
-    {
-      id: 3,
-      text: "Comment préparer sa retraite à 30 ans ?",
-      category: "Retraite",
-      trend: -3,
-      askCount: 156,
-      avgTime: "7 min",
-      satisfaction: 85
-    }
-  ];
-
-  // Auto-complete suggestions
-  const autoCompleteSuggestions = [
-    "Comment économiser plus chaque mois ?",
-    "Optimiser mon budget familial",
-    "Réduire mes dépenses courantes",
-    "Planifier ma retraite",
-    "Investir mon épargne",
-    "Rembourser mes crédits plus vite",
-    "Acheter ma première maison",
-    "Changer de banque",
-    "Négocier mes assurances",
-    "Préparer un projet de voyage"
-  ];
-
-  // Data requirements based on current query
-  const [dataRequirements, setDataRequirements] = useState([]);
+  // État pour l'effet "révélation progressive"
+  const [revealedElements, setRevealedElements] = useState({});
 
   useEffect(() => {
-    if (currentQuery.toLowerCase().includes('budget') || currentQuery.toLowerCase().includes('économiser')) {
-      setDataRequirements([
-        {
-          type: 'income',
-          title: 'Revenus mensuels',
-          description: 'Salaire, primes, revenus complémentaires',
-          status: 'missing'
-        },
-        {
-          type: 'expenses',
-          title: 'Dépenses courantes',
-          description: 'Logement, alimentation, transport, loisirs',
-          status: 'missing'
-        }
-      ]);
-      setShowDataRequirements(true);
-    } else if (currentQuery.toLowerCase().includes('épargne') || currentQuery.toLowerCase().includes('maison')) {
-      setDataRequirements([
-        {
-          type: 'savings',
-          title: 'Épargne actuelle',
-          description: 'Livrets, comptes épargne, investissements',
-          status: 'missing'
-        },
-        {
-          type: 'goals',
-          title: 'Objectifs financiers',
-          description: 'Montant cible, échéance souhaitée',
-          status: 'missing'
-        }
-      ]);
-      setShowDataRequirements(true);
-    } else {
-      setShowDataRequirements(false);
-      setDataRequirements([]);
-    }
-  }, [currentQuery]);
+    // Animation d'entrée progressive
+    const timer = setTimeout(() => {
+      setAnimationPhase('ready');
+    }, 1000);
 
-  const handleQuestionSubmit = useCallback((question) => {
-    setCurrentQuery(question);
-    
-    // Add to recent questions
-    const newQuestion = {
-      id: Date.now(),
-      question: question,
-      timestamp: new Date(),
-      status: 'processing'
-    };
-    setRecentQuestions(prev => [newQuestion, ...prev.slice(0, 4)]);
-
-    // Simulate processing and redirect to analysis
-    setTimeout(() => {
-      navigateTo('/dynamic-financial-equation-visualizer');
-    }, 1500);
-  }, [navigateTo]);
-
-  const handleVoiceSubmit = useCallback((transcript) => {
-    handleQuestionSubmit(transcript);
-  }, [handleQuestionSubmit]);
-
-  const handleSuggestionSelect = useCallback((suggestion) => {
-    handleQuestionSubmit(suggestion.question);
-  }, [handleQuestionSubmit]);
-
-  const handleRerunQuestion = useCallback((question) => {
-    handleQuestionSubmit(question.question);
-  }, [handleQuestionSubmit]);
-
-  const handleDeleteQuestion = useCallback((questionId) => {
-    setRecentQuestions(prev => prev.filter(q => q.id !== questionId));
+    return () => clearTimeout(timer);
   }, []);
 
-  const handleQuickAdd = useCallback((dataType) => {
-    // Navigate to data mapping page with specific section
-    const url = buildUrl('/interactive-financial-data-mapping', { section: dataType });
-    navigateTo(url);
-  }, [navigateTo]);
+  const handlePersonaSelect = (persona) => {
+    setSelectedPersona(persona);
+    setCurrentStep('question');
+    
+    // Pré-remplir avec une question du persona si l'utilisateur n'a rien écrit
+    if (!question.trim()) {
+      const suggestions = getSuggestedQuestions(persona);
+      setQuestion(suggestions[0]?.text || '');
+    }
+  };
 
-  const filteredSuggestions = useMemo(() => {
-    return activeCategory === 'all' 
-      ? questionSuggestions 
-      : questionSuggestions.filter(s => s.category.toLowerCase() === activeCategory);
-  }, [activeCategory, questionSuggestions]);
+  const handleQuestionSubmit = async () => {
+    if (!question.trim()) return;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <Header />
-      <AnalyticalContextSwitcher />
-      <NavigationProgressIndicator />
+    setCurrentStep('submitting');
+    
+    try {
+      // Sauvegarde locale de la question
+      const questionData = {
+        question: question.trim(),
+        persona: selectedPersona,
+        timestamp: new Date().toISOString()
+      };
+      
+      localStorage.setItem('rivela-current-question', JSON.stringify(questionData));
+      
+      // Navigation vers l'écran de cartographie
+      setTimeout(() => {
+        navigate('/interactive-financial-data-mapping', { 
+          state: { 
+            question: question.trim(),
+            persona: selectedPersona 
+          } 
+        });
+      }, 1500);
 
-      <main className="pt-16 lg:pt-30 pb-20 lg:pb-8">
-        <div className="container mx-auto px-4 max-w-6xl">
-          {/* Hero Section */}
+    } catch (error) {
+      logger.error('Erreur lors de la soumission de la question:', error);
+      setCurrentStep('question');
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setQuestion(value);
+    setIsTyping(value.length > 0);
+    setShowSuggestions(value.length > 0 && !selectedPersona);
+  };
+
+  const getSuggestionsFromText = (text) => {
+    const allSuggestions = Object.values(PERSONAS).flatMap(persona => 
+      getSuggestedQuestions(persona)
+    );
+    
+    return allSuggestions.filter(suggestion =>
+      suggestion.text.toLowerCase().includes(text.toLowerCase()) ||
+      text.toLowerCase().includes(suggestion.text.toLowerCase().slice(0, 5))
+    ).slice(0, 3);
+  };
+
+  const renderWelcomeStep = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -50 }}
+      className="text-center space-y-8"
+    >
+      {/* Logo et titre principal */}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.8 }}
+      >
+        <div className="text-6xl mb-4">💡</div>
+        <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
+          Rivela
+        </h1>
+        <p className="text-xl text-muted-foreground mb-2">Explorateur Financier</p>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          "Vos données + Notre science = Votre révélation financière"
+        </p>
+      </motion.div>
+
+      {/* Mission statement */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8, duration: 0.6 }}
+        className="bg-card border rounded-xl p-6 max-w-lg mx-auto"
+      >
+        <h2 className="text-lg font-semibold mb-3 text-foreground">
+          🌟 Notre Mission
+        </h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Révéler l'impact invisible de vos choix financiers quotidiens par des équations personnelles et des insights neuroscientifiques
+        </p>
+      </motion.div>
+
+      {/* CTA */}
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2, duration: 0.6 }}
+        onClick={() => setCurrentStep('personas')}
+        className="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:scale-105 transition-transform shadow-lg"
+      >
+        Découvrir mon profil financier ✨
+      </motion.button>
+
+      {/* Stats de crédibilité */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.6, duration: 0.6 }}
+        className="text-xs text-muted-foreground"
+      >
+        Déjà 127 révélations financières cette semaine
+      </motion.div>
+    </motion.div>
+  );
+
+  const renderPersonasStep = () => (
+    <motion.div
+      initial={{ opacity: 0, x: 100 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -100 }}
+      className="space-y-6"
+    >
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold mb-4">Qui vous ressemble le plus ?</h2>
+        <p className="text-muted-foreground">
+          Choisissez le profil qui correspond à votre situation pour des insights personnalisés
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {Object.values(PERSONAS).map((persona, index) => (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            key={persona.id}
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8 lg:mb-12"
+            transition={{ delay: index * 0.2 }}
+            onClick={() => handlePersonaSelect(persona)}
+            className="bg-card border rounded-xl p-6 cursor-pointer hover:border-primary transition-all hover:scale-105 group"
+            style={{ borderColor: selectedPersona?.id === persona.id ? persona.couleurTheme : undefined }}
           >
-            <div className="flex items-center justify-center mb-4">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-sm">
-                <Icon name="MessageSquare" size={32} className="text-primary" />
+            <div className="text-center space-y-4">
+              <div className="text-4xl">{persona.age}ans</div>
+              <div>
+                <h3 className="font-semibold text-lg" style={{ color: persona.couleurTheme }}>
+                  {persona.name}
+                </h3>
+                <p className="text-sm text-muted-foreground">{persona.description}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-primary">Besoin principal:</div>
+                <div className="text-sm">{persona.besoinPrincipal}</div>
+              </div>
+              
+              <div className="bg-muted rounded-lg p-3">
+                <div className="text-xs font-medium mb-1">Frustration typique:</div>
+                <div className="text-xs italic">"{persona.frustration}"</div>
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                Archétype: {persona.archetype}
               </div>
             </div>
-            <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-4">
-              Posez vos questions financières
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Obtenez des insights personnalisés et des analyses approfondies 
-              grâce à l'intelligence artificielle financière
-            </p>
           </motion.div>
+        ))}
+      </div>
 
-          {/* Search Section */}
+      <div className="text-center">
+        <button
+          onClick={() => setCurrentStep('question')}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Passer cette étape →
+        </button>
+      </div>
+    </motion.div>
+  );
+
+  const renderQuestionStep = () => (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      className="space-y-6"
+    >
+      {/* Header avec persona sélectionné */}
+      {selectedPersona && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border rounded-xl p-4 flex items-center space-x-4"
+        >
+          <div 
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: selectedPersona.couleurTheme }}
+          />
+          <div>
+            <div className="font-medium">Profil: {selectedPersona.name}</div>
+            <div className="text-sm text-muted-foreground">{selectedPersona.archetype}</div>
+          </div>
+          <button 
+            onClick={() => setCurrentStep('personas')}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+          >
+            Changer
+          </button>
+        </motion.div>
+      )}
+
+      {/* Question principale */}
+      <div className="text-center space-y-4">
+        <motion.h1 
+          className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          Quelle est votre question financière ?
+        </motion.h1>
+        <motion.p 
+          className="text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Posez-nous n'importe quelle question sur votre situation financière
+        </motion.p>
+      </div>
+
+      {/* Zone de saisie principale */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="relative"
+      >
+        <textarea
+          value={question}
+          onChange={handleInputChange}
+          placeholder={selectedPersona 
+            ? `Ex: ${selectedPersona.questions_types[0]}`
+            : "Ex: Pourquoi j'ai toujours -200€ en fin de mois ?"
+          }
+          className="w-full h-32 p-6 text-lg border rounded-xl resize-none bg-background focus:border-primary transition-colors"
+          autoFocus
+        />
+        
+        {/* Indicateur de frappe */}
+        <AnimatePresence>
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
+            >
+              ✨
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Compteur de caractères */}
+        <div className="absolute bottom-4 right-4 text-xs text-muted-foreground">
+          {question.length}/500
+        </div>
+      </motion.div>
+
+      {/* Suggestions intelligentes */}
+      <AnimatePresence>
+        {showSuggestions && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-3"
           >
-            <SearchBar
-              onSubmit={handleQuestionSubmit}
-              onVoiceClick={() => setIsVoiceModalOpen(true)}
-              suggestions={autoCompleteSuggestions}
-            />
+            <div className="text-sm font-medium text-muted-foreground">
+              💡 Suggestions basées sur votre saisie:
+            </div>
+            {getSuggestionsFromText(question).map((suggestion, index) => (
+              <motion.button
+                key={suggestion.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => setQuestion(suggestion.text)}
+                className="w-full text-left p-4 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+              >
+                <div className="font-medium text-sm">{suggestion.text}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Catégorie: {suggestion.category}
+                </div>
+              </motion.button>
+            ))}
           </motion.div>
+        )}
+      </AnimatePresence>
 
-          {/* Data Requirements Panel */}
-          {showDataRequirements && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
-            >
-              <DataRequirementsPanel
-                requirements={dataRequirements}
-                onQuickAdd={handleQuickAdd}
-              />
-            </motion.div>
-          )}
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Category Filter */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <CategoryFilter
-                  categories={categories}
-                  activeCategory={activeCategory}
-                  onCategoryChange={setActiveCategory}
-                />
-              </motion.div>
-
-              {/* Question Suggestions */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Questions suggérées
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconName="Shuffle"
-                    className="text-muted-foreground"
-                  >
-                    Mélanger
-                  </Button>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  {filteredSuggestions.map((suggestion, index) => (
-                    <QuestionSuggestionCard
-                      key={suggestion.id}
-                      suggestion={suggestion}
-                      onSelect={handleSuggestionSelect}
-                      index={index}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Recent Questions */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <RecentQuestionsSection
-                  recentQuestions={recentQuestions}
-                  onRerun={handleRerunQuestion}
-                  onDelete={handleDeleteQuestion}
-                />
-              </motion.div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-8">
-              {/* Trending Questions */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="hidden lg:block"
-              >
-                <TrendingQuestions
-                  trendingQuestions={trendingQuestions}
-                  onSelect={handleQuestionSubmit}
-                />
-              </motion.div>
-
-              {/* Quick Stats */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-                className="glass-card rounded-xl p-6"
-              >
-                <h3 className="font-semibold text-foreground mb-4 flex items-center">
-                  <Icon name="BarChart3" size={20} className="mr-2 text-primary" />
-                  Statistiques communauté
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Questions posées aujourd'hui</span>
-                    <span className="font-semibold text-foreground">1,247</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Temps moyen d'analyse</span>
-                    <span className="font-semibold text-foreground">4.2 min</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Satisfaction utilisateurs</span>
-                    <span className="font-semibold text-success">94%</span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Help Section */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.7 }}
-                className="glass-card rounded-xl p-6"
-              >
-                <h3 className="font-semibold text-foreground mb-4 flex items-center">
-                  <Icon name="HelpCircle" size={20} className="mr-2 text-primary" />
-                  Besoin d'aide ?
-                </h3>
-                
-                <div className="space-y-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconName="BookOpen"
-                    iconPosition="left"
-                    className="w-full justify-start text-muted-foreground hover:text-foreground"
-                  >
-                    Guide d'utilisation
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconName="MessageCircle"
-                    iconPosition="left"
-                    className="w-full justify-start text-muted-foreground hover:text-foreground"
-                  >
-                    Exemples de questions
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconName="Mail"
-                    iconPosition="left"
-                    className="w-full justify-start text-muted-foreground hover:text-foreground"
-                  >
-                    Contacter le support
-                  </Button>
-                </div>
-              </motion.div>
-            </div>
+      {/* Questions fréquentes si persona sélectionné */}
+      {selectedPersona && !showSuggestions && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="space-y-3"
+        >
+          <div className="text-sm font-medium text-muted-foreground">
+            🎯 Questions fréquentes pour votre profil:
           </div>
-        </div>
-      </main>
+          {getSuggestedQuestions(selectedPersona).slice(0, 3).map((suggestion, index) => (
+            <motion.button
+              key={suggestion.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 + index * 0.1 }}
+              onClick={() => setQuestion(suggestion.text)}
+              className="w-full text-left p-3 border rounded-lg hover:border-primary transition-colors group"
+            >
+              <div className="text-sm group-hover:text-primary transition-colors">
+                {suggestion.text}
+              </div>
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
 
-      {/* Voice Input Modal */}
-      <VoiceInputModal
-        isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-        onSubmit={handleVoiceSubmit}
+      {/* Bouton de soumission */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="text-center pt-4"
+      >
+        <button
+          onClick={handleQuestionSubmit}
+          disabled={!question.trim() || currentStep === 'submitting'}
+          className="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-transform shadow-lg"
+        >
+          {question.trim() ? 'Analyser ma situation 🔍' : 'Saisissez votre question'}
+        </button>
+      </motion.div>
+
+      {/* Badge de confidentialité */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="text-center text-xs text-muted-foreground space-y-1"
+      >
+        <div className="flex items-center justify-center space-x-2">
+          <span>🔒</span>
+          <span>Confidentialité totale - Données stockées localement</span>
+        </div>
+        <div>Zero Data Policy • Chiffrement AES-256</div>
+      </motion.div>
+    </motion.div>
+  );
+
+  const renderSubmittingStep = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="text-center space-y-8 py-12"
+    >
+      <motion.div
+        animate={{ 
+          rotate: 360,
+          scale: [1, 1.2, 1]
+        }}
+        transition={{ 
+          rotate: { repeat: Infinity, duration: 2 },
+          scale: { repeat: Infinity, duration: 1.5 }
+        }}
+        className="text-6xl"
+      >
+        🧠
+      </motion.div>
+      
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Analyse en cours...</h2>
+        <p className="text-muted-foreground">
+          Notre IA analyse votre question avec nos algorithmes neuroscientifiques
+        </p>
+      </div>
+
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: '100%' }}
+        transition={{ duration: 1.5 }}
+        className="h-2 bg-gradient-to-r from-primary to-secondary rounded-full mx-auto max-w-xs"
       />
 
-      <BottomNavigation />
+      <div className="text-sm text-muted-foreground space-y-1">
+        <div>✓ Question analysée</div>
+        <div>⏳ Préparation de votre cartographie financière...</div>
+      </div>
+    </motion.div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-6">
+      <div className="max-w-4xl mx-auto">
+        <AnimatePresence mode="wait">
+          {currentStep === 'welcome' && renderWelcomeStep()}
+          {currentStep === 'personas' && renderPersonasStep()}
+          {currentStep === 'question' && renderQuestionStep()}
+          {currentStep === 'submitting' && renderSubmittingStep()}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
